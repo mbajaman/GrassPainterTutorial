@@ -1,9 +1,10 @@
-# GrassPainterTutorial
-A grass painter tutorial by Roystan for learning about geometry shaders.
+# Roystan Shader Tutorials
+A set of tutorials by Roystan for learning about Unity and shaders.
+Source: https://roystan.net/articles/
 
-Source: https://roystan.net/articles/grass-shader/
 
 # Overview
-This repository is for personal educational purposes with the goal of learning how geometry shaders work.
+This repository is for personal educational purposes with the goal of learning more about shaders to eventually make a plugin for Unreal Engine 5.
 
-This serves as a pre-requisite for another project I'm working on for creating a grass-shader tool.
+### Grass Shader
+Source: https://roystan.net/articles/grass-shader/
