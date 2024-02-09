@@ -24,67 +24,75 @@
 		{
 			Tags
 			{
-				"LightMode" = "ForwardBase"
+				"LightMode" = "UniversalForward"
 				"PassFlags" = "OnlyDirectional"
+				"RenderPipeline" = "UniversalPipeline"
 			}
 
-			CGPROGRAM
+			HLSLPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma multi_compile_fwdbase
 			
-			#include "UnityCG.cginc"
-			#include "Lighting.cginc"
-			#include "Autolight.cginc"
+			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
-			struct appdata
+			struct Attributes
 			{
 				float4 vertex : POSITION;				
 				float4 uv : TEXCOORD0;
 				float3 normal : NORMAL;
 			};
 
-			struct v2f
+			struct Varyings
 			{
 				float4 pos : SV_POSITION;
 				float2 uv : TEXCOORD0;
 				float3 worldNormal : NORMAL;
 				float3 viewDir : TEXCOORD1;
-				SHADOW_COORDS(2)
+				float4 shadowCoord : TEXCOORD2;
 			};
 
-			sampler2D _MainTex;
+			TEXTURE2D(_MainTex);
+			SAMPLER(sampler_MainTex);
+
+			CBUFFER_START(UnityPerMaterial)
 			float4 _MainTex_ST;
+			CBUFFER_END
 			
-			v2f vert (appdata v)
+			Varyings vert (Attributes IN)
 			{
-				v2f o;
-				o.pos = UnityObjectToClipPos(v.vertex);
-				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-				o.worldNormal = UnityObjectToWorldNormal(v.normal);
-				o.viewDir = WorldSpaceViewDir(v.vertex);
-				TRANSFER_SHADOW(o);
-				return o;
+				Varyings OUT;
+				OUT.pos = TransformObjectToHClip(IN.vertex.xyz);
+				OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
+				OUT.worldNormal = TransformObjectToWorldNormal(IN.normal);
+				OUT.viewDir = WorldSpaceViewDir(IN.vertex);
+				OUT.shadowCoord = GetShadowCoord(IN.)
+				TRANSFER_SHADOW(OUT);
+				return OUT;
 			}
-			
+
+			CBUFFER_START(UnityPerMaterial)
 			float4 _Color;
 			float4 _AmbientColor;
 			float4 _SpecularColor;
 			float _Glossiness;
 			float4 _RimColor;
 			float _RimAmount;
-			float _RimThreshold;
+			float _RimThreshold; 
+			CBUFFER_END
 
-			float4 frag (v2f i) : SV_Target
+			float4 frag (Varyings IN) : SV_Target
 			{
-				float3 normal = normalize(i.worldNormal);
+				float3 normal = normalize(IN.worldNormal);
 				float4 NdotL = dot(_WorldSpaceLightPos0, normal);
 				// float lightIntensity = NdotL > 0 ? 1 : 0;
-				float shadow = SHADOW_ATTENUATION(i);
+				float shadow = SHADOW_ATTENUATION(IN);
 				float lightIntensity = smoothstep(0, 0.01, NdotL * shadow);
 				float4 light = lightIntensity * _LightColor0;
 
-				float3 viewDir = normalize(i.viewDir);
+				float3 viewDir = normalize(IN.viewDir);
 				float3 halfVector = normalize(_WorldSpaceLightPos0 + viewDir);
 				float NdotH = dot(normal, halfVector);
 				float specularIntensity = pow(NdotH * lightIntensity, _Glossiness * _Glossiness);
@@ -97,11 +105,11 @@
 				rimIntensity = smoothstep(_RimAmount - 0.01, _RimAmount + 0.01, rimIntensity);
 				float4 rim = rimIntensity * _RimColor;
 
-				float4 sample = tex2D(_MainTex, i.uv);
+				float4 sample = tex2D(_MainTex, IN.uv);
 
 				return _Color * sample * (_AmbientColor + light + specular + rim);
 			}
-			ENDCG
+			ENDHLSL
 		}
 
 		UsePass "Legacy Shaders/VertexLit/SHADOWCASTER"
