@@ -33,6 +33,10 @@
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma multi_compile_fwdbase
+			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS
+			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
+			#pragma multi_compile _ _SHADOWS_SOFT
+
 			
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -67,9 +71,9 @@
 				OUT.pos = TransformObjectToHClip(IN.vertex.xyz);
 				OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
 				OUT.worldNormal = TransformObjectToWorldNormal(IN.normal);
-				OUT.viewDir = WorldSpaceViewDir(IN.vertex);
-				OUT.shadowCoord = GetShadowCoord(IN.)
-				TRANSFER_SHADOW(OUT);
+				OUT.viewDir = _WorldSpaceCameraPos.xyz - mul(GetObjectToWorldMatrix(), float4(IN.vertex.xyz, 1.0)).xyz;
+				VertexPositionInputs vertexInput = GetVertexPositionInputs(IN.vertex.xyz);
+				OUT.shadowCoord = GetShadowCoord(vertexInput);
 				return OUT;
 			}
 
@@ -80,7 +84,7 @@
 			float _Glossiness;
 			float4 _RimColor;
 			float _RimAmount;
-			float _RimThreshold; 
+			float _RimThreshold;
 			CBUFFER_END
 
 			float4 frag (Varyings IN) : SV_Target
